@@ -1,17 +1,17 @@
-" File Name:   last_modified.vim
+" File Name:   lastModified.vim
 "
 " Author: 	   Sudipta Ghorui <sudipta05@gmail.com>
-" 
+"
 " Credits: 	   Srinath Avadhanula <srinath@fastmail.fm>
 "			   Justin Randall <Randall311@yahoo.com>
-"			   for the concept, and			   
+"			   for the original script and concept, and			
 "			   Neeraj Prasad <neeraj@alumnux.com>
 "			   Bikram Chatterjee <bikram@alumnux.com>
 "			   who suggested me not to delete any comment (if exists) after
 "			   the time stamp and inspired me to do further modifications
-"			   			   
-" Last Modified: Tue Dec 06 12:46 PM 2005
-" 
+"			   			
+" Last Modified: Fri May 04 04:30 PM 2007
+"
 " Description: sets the last modification time of the current file.
 "              the modification time is truncated to the last hour.  and the
 "              next time the time stamp is changed, it is checked against the
@@ -29,16 +29,18 @@
 " 					   b> Change the variable 'timeStampFormat'. Put an example
 " 					     of the time format you want.
 " 					   c> Change the variable 'timeStampString'. Change it to
-" 					     get the proper time stamp. Read the comments in the 
+" 					     get the proper time stamp. Read the comments in the
 " 					     code to change the variable.
 
 
+" Initialise the variables: {{{1
 if !exists('g:timeStampLeader')
-	let s:timeStampLeader = 'Last Modified: '
+	let s:timeStampLeader = 'Last Modified'
 else
 	let s:timeStampLeader = g:timeStampLeader
 endif
 
+" Main Function: {{{1
 function! UpdateWithLastMod()
 	if exists('b:nomod') && b:nomod
 		return
@@ -48,9 +50,14 @@ function! UpdateWithLastMod()
 	let searchPos = search(s:timeStampLeader)
 	if searchPos <= 20 && searchPos > 0 && &modifiable
 
-		" The format of the time stamp
+        let totalLine = getline('.')
+        let lastdate  = matchstr(totalLine, s:timeStampLeader.'.*:\zs.*')
+        let timePos   = match(totalLine, lastdate)
+        let crFirst   = strpart(totalLine, 0, timePos)
+
+		" The format of the time stamp  {{{1
 		" please change the two variables according to the format you want
-		" 
+		"
 		" syntax - format  - example
 		" %a	 - Day	   - Sat
 		" %Y     - YYYY    - 2005
@@ -62,18 +69,17 @@ function! UpdateWithLastMod()
 		" %M	 - MM	   - 50 (minute)
 		" %X	 - HH:MM:SS-12:29:34)
 		" %p	 - AM/PM
-		" 
-		let timeStampFormat = "Sun Sep 11 07:08 PM 2005"
-		let timeStampString = "%a %b %d %I:%M %p %Y"
-		
+		"
+		let timeStampFormat = "19 Dec 2005"
+		let timeStampString = "%d %b %Y"
+
 		let timeStampFormatLength = strlen(timeStampFormat)
-		let lastdate = matchstr(getline('.'), s:timeStampLeader.'\zs.*')
-		
+
 		let newdate  = strftime(timeStampString)
 		let prefix   = ""
 		let spaceLength = 0
-		
-		" Determines the space or tab before the time stamp 
+
+		" Determines the space or tab before the time stamp {{{1
 		while 1
 			if match(lastdate, " ") == 0
 				let lastdate= strpart(lastdate, 1)
@@ -87,7 +93,8 @@ function! UpdateWithLastMod()
 		endwhile
 
 		let spaceIndex = 0
-		" Checks whether the time format is same or not
+
+		" Checks whether the time format is same or not {{{1
 		while spaceIndex <= timeStampFormatLength
 			let spaceIndex1 = match(lastdate, " ", spaceIndex)
 			let spaceIndex2 = match(timeStampFormat, " ", spaceIndex)
@@ -107,14 +114,14 @@ function! UpdateWithLastMod()
 			end
 		endwhile
 
-		let newdate = newdate.strpart(lastdate , spaceIndex - 1)
+		let newdate = newdate.strpart(lastdate, spaceIndex - 1)
 		if lastdate == newdate
 			exe pos
 			return
 		end
 
-		let newdate = prefix.newdate
-		exe 's/'.s:timeStampLeader.'.*/'.s:timeStampLeader.newdate.'/e'
+		"let newdate = prefix.newdate
+		exe 's/'.lastdate.'/'.newdate.'/e'
 		call s:RemoveLastHistoryItem()
 	else
 		exe pos
@@ -124,17 +131,21 @@ function! UpdateWithLastMod()
 	exe pos
 endfunction
 
+" Call the function: {{{1
 augroup LastChange
 	au!
 	au BufWritePre * :call UpdateWithLastMod()
 augroup END
 
+" Remove history: {{{1
 function! <SID>RemoveLastHistoryItem()
   call histdel("/", -1)
   let @/ = histget("/", -1)
 endfunction
 
-com! -nargs=0 NOMOD :let b:nomod = 1
-com! -nargs=1 MOD   :let b:nomod = 0
 
-" vim:ts=4:sw=4:noet
+" Modify the commands: {{{1
+com! -nargs=0 NOMOD :let b:nomod = 1
+com! -nargs=0 MOD   :let b:nomod = 0
+
+" vim:ts=4:sw=4:noet fdm=marker
